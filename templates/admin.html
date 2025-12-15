@@ -1,23 +1,299 @@
-<!-- templates/admin.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventBooker - Панель администратора</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
-<body>
-    <h1>Create Event</h1>
-    <form id="create-event-form">
-        Name: <input type="text" id="name"><br>
-        Date: <input type="datetime-local" id="date"><br>
-        Total Seats: <input type="number" id="total-seats"><br>
-        Booking TTL (e.g., 30m): <input type="text" id="booking-ttl"><br>
-        Requires Payment: <input type="checkbox" id="requires-payment"><br>
-        <button type="submit">Create</button>
-    </form>
-    <h1>Events</h1>
-    <div id="events-list"></div>
+<body class="admin-panel">
+    <!-- Sidebar -->
+    <div class="sidebar d-flex flex-column">
+        <div class="p-4">
+            <h3 class="fw-bold text-dark mb-0">
+                <i class="bi bi-shield-lock text-primary me-2"></i>
+                Admin Panel
+            </h3>
+            <small class="text-muted">EventBooker Management System</small>
+        </div>
+        
+        <nav class="nav flex-column mt-3">
+            <a class="nav-link active" href="#">
+                <i class="bi bi-speedometer2 me-2"></i>Дашборд
+            </a>
+            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#createEventModal">
+                <i class="bi bi-plus-circle me-2"></i>Создать мероприятие
+            </a>
+            <a class="nav-link" href="#" onclick="app.loadEvents()">
+                <i class="bi bi-calendar-event me-2"></i>Все мероприятия
+            </a>
+            <a class="nav-link" href="#" onclick="app.loadBookings()">
+                <i class="bi bi-bookmark-check me-2"></i>Бронирования
+            </a>
+            <a class="nav-link" href="#" onclick="app.filterBookings('expired')">
+                <i class="bi bi-clock-history me-2"></i>Просроченные
+            </a>
+            <a class="nav-link" href="/">
+                <i class="bi bi-arrow-left-circle me-2"></i>В пользовательский режим
+            </a>
+        </nav>
+        
+        <div class="mt-auto p-4">
+            <div class="alert alert-info">
+                <small>
+                    <i class="bi bi-info-circle me-1"></i>
+                    <strong>Сервис активен:</strong> Автоматическая очистка броней каждую минуту
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 fw-bold text-dark mb-1">Панель администратора</h1>
+                <p class="text-muted mb-0">Управление мероприятиями и бронированиями</p>
+            </div>
+            <div class="search-box">
+                <i class="bi bi-search text-muted me-2"></i>
+                <input type="text" id="searchInput" placeholder="Поиск мероприятий..." 
+                       class="border-0 outline-0 w-75" onkeyup="app.filterEvents()">
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-events">0</div>
+                    <div class="stat-label">Всего мероприятий</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-value" id="active-bookings">0</div>
+                    <div class="stat-label">Активных броней</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-value" id="pending-confirmations">0</div>
+                    <div class="stat-label">Ожидают подтверждения</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card danger">
+                    <div class="stat-value" id="expired-bookings">0</div>
+                    <div class="stat-label">Просрочено сегодня</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Events Table -->
+        <div class="table-container mb-4">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">Мероприятия</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary me-2" onclick="app.loadEvents()">
+                        <i class="bi bi-arrow-clockwise"></i> Обновить
+                    </button>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createEventModal">
+                        <i class="bi bi-plus-lg me-1"></i> Новое
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Дата</th>
+                            <th>Места</th>
+                            <th>Статус</th>
+                            <th>TTL брони</th>
+                            <th>Оплата</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="events-table-body">
+                        <!-- Данные загружаются динамически -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bookings Table -->
+        <div class="table-container">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">Последние бронирования</h5>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-secondary booking-filter active" 
+                            data-filter="all">Все</button>
+                    <button class="btn btn-sm btn-outline-secondary booking-filter" 
+                            data-filter="pending">Ожидают</button>
+                    <button class="btn btn-sm btn-outline-secondary booking-filter" 
+                            data-filter="confirmed">Подтверждены</button>
+                    <button class="btn btn-sm btn-outline-secondary booking-filter" 
+                            data-filter="cancelled">Отменены</button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID брони</th>
+                            <th>Мероприятие</th>
+                            <th>Пользователь</th>
+                            <th>Статус</th>
+                            <th>Создано</th>
+                            <th>Истекает</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookings-table-body">
+                        <!-- Данные загружаются динамически -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Create Event -->
+    <div class="modal fade" id="createEventModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-calendar-plus me-2"></i>Создание мероприятия
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="create-event-form">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="event-name" class="form-label">Название мероприятия *</label>
+                                <input type="text" class="form-control" id="event-name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="event-date" class="form-label">Дата и время *</label>
+                                <input type="datetime-local" class="form-control" id="event-date" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="total-seats" class="form-label">Количество мест *</label>
+                                <input type="number" class="form-control" id="total-seats" min="1" value="50" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="booking-ttl" class="form-label">Время на бронь *</label>
+                                <select class="form-select" id="booking-ttl">
+                                    <option value="15m">15 минут</option>
+                                    <option value="30m" selected>30 минут</option>
+                                    <option value="1h">1 час</option>
+                                    <option value="2h">2 часа</option>
+                                    <option value="6h">6 часов</option>
+                                    <option value="12h">12 часов</option>
+                                    <option value="24h">24 часа</option>
+                                    <option value="48h">48 часов</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label d-block">Требуется оплата</label>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="requires-payment" 
+                                           id="payment-yes" value="true" checked>
+                                    <label class="form-check-label" for="payment-yes">Да</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="requires-payment" 
+                                           id="payment-no" value="false">
+                                    <label class="form-check-label" for="payment-no">Нет</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <small>
+                                <i class="bi bi-info-circle me-1"></i>
+                                <strong>Время на бронь (TTL):</strong> Если бронь не будет подтверждена в течение этого времени, 
+                                она будет автоматически отменена системой.
+                            </small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" form="create-event-form" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>Создать мероприятие
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Cancel Event -->
+    <div class="modal fade" id="cancelEventModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Отмена мероприятия
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="cancel-event-form">
+                        <div class="mb-3">
+                            <p>Вы собираетесь отменить мероприятие:</p>
+                            <h5 id="cancel-event-name" class="text-danger"></h5>
+                            <input type="hidden" id="cancel-event-id">
+                        </div>
+                        <div class="mb-3">
+                            <label for="cancel-reason" class="form-label">Причина отмены</label>
+                            <textarea class="form-control" id="cancel-reason" rows="3" 
+                                      placeholder="Укажите причину отмены (необязательно)"></textarea>
+                        </div>
+                        <div class="alert alert-warning">
+                            <small>
+                                <i class="bi bi-exclamation-circle me-1"></i>
+                                <strong>Внимание:</strong> Все бронирования на это мероприятие будут автоматически отменены. 
+                                Пользователи получат уведомления об отмене.
+                            </small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" form="cancel-event-form" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>Отменить мероприятие
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Event Details -->
+    <div class="modal fade" id="eventDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="event-details-title"></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="event-details-content">
+                    <!-- Контент будет загружен динамически -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/app.js"></script>
 </body>
 </html>

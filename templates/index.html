@@ -1,31 +1,273 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>User Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventBooker - Панель пользователя</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
-<body>
-    <h1>Register User</h1>
-    <form id="register-form">
-        Email: <input type="email" id="email"><br>
-        Telegram Chat ID: <input type="text" id="telegram"><br>
-        <button type="submit">Register</button>
-    </form>
-    <h1>Events</h1>
-    <div id="events-list"></div>
-    <h1>Book Place</h1>
-    <form id="book-form">
-        Event ID: <input type="text" id="book-event-id"><br>
-        User ID: <input type="text" id="book-user-id"><br>
-        <button type="submit">Book</button>
-    </form>
-    <h1>Confirm Booking</h1>
-    <form id="confirm-form">
-        Booking ID: <input type="text" id="confirm-booking-id"><br>
-        <button type="submit">Confirm</button>
-    </form>
+<body class="user-panel">
+    <!-- Навигация -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-calendar-event me-2"></i>
+                EventBooker
+            </a>
+            <div class="d-flex">
+                <a href="/admin" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-shield-lock me-1"></i>Панель администратора
+                </a>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registerModal">
+                    <i class="bi bi-person-plus me-1"></i>Регистрация
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Уведомления -->
+    <div id="alert-container" class="alert-toast"></div>
+
+    <!-- Основной контент -->
+    <div class="container py-4">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h1 class="display-6 fw-bold text-dark mb-3">
+                    <i class="bi bi-ticket-perforated text-primary me-2"></i>
+                    Доступные мероприятия
+                </h1>
+                <p class="text-muted">Выберите мероприятие и забронируйте место. Не забудьте подтвердить бронь!</p>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="d-flex justify-content-end">
+                    <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#bookModal">
+                        <i class="bi bi-bookmark-plus me-1"></i>Забронировать
+                    </button>
+                    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#confirmModal">
+                        <i class="bi bi-check-circle me-1"></i>Подтвердить бронь
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Информация о пользователе -->
+        <div id="user-info" class="mb-4"></div>
+
+        <!-- Статистика -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-icon">
+                        <i class="bi bi-calendar-week"></i>
+                    </div>
+                    <h3 id="events-count" class="fw-bold">0</h3>
+                    <p class="text-muted mb-0">Мероприятий</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <h3 id="available-seats" class="fw-bold">0</h3>
+                    <p class="text-muted mb-0">Свободных мест</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-icon">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <h3 id="pending-bookings" class="fw-bold">0</h3>
+                    <p class="text-muted mb-0">Ожидают подтверждения</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="progress-ring mx-auto mb-3">
+                        <svg viewBox="0 0 100 100">
+                            <circle class="progress-ring-bg" cx="50" cy="50" r="45"></circle>
+                            <circle class="progress-ring-fill" cx="50" cy="50" r="45"></circle>
+                        </svg>
+                    </div>
+                    <h3 id="booking-progress" class="fw-bold">0%</h3>
+                    <p class="text-muted mb-0">Заполненность</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Список мероприятий -->
+        <div class="row" id="events-container">
+            <!-- События будут загружены динамически -->
+        </div>
+
+        <!-- Сообщение при отсутствии мероприятий -->
+        <div id="no-events" class="text-center py-5 d-none">
+            <div class="mb-4">
+                <i class="bi bi-calendar-x text-muted" style="font-size: 4rem;"></i>
+            </div>
+            <h3 class="text-muted mb-3">Нет доступных мероприятий</h3>
+            <p class="text-muted">Проверьте позже или обратитесь к администратору.</p>
+        </div>
+    </div>
+
+    <!-- Модальное окно регистрации -->
+    <div class="modal fade" id="registerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-person-plus me-2"></i>Регистрация пользователя
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="register-form">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="email" 
+                                   placeholder="example@mail.com" required>
+                            <div class="form-text">Для уведомлений об отмене брони</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="telegram" class="form-label">Telegram Chat ID</label>
+                            <input type="text" class="form-control" id="telegram" 
+                                   placeholder="@username или chat_id">
+                            <div class="form-text">Необязательно. Для уведомлений в Telegram</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Роль</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="role" 
+                                           id="role-user" value="user" checked>
+                                    <label class="form-check-label" for="role-user">Пользователь</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="role" 
+                                           id="role-admin" value="admin">
+                                    <label class="form-check-label" for="role-admin">Администратор</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-info">
+                            <small>
+                                <i class="bi bi-info-circle me-1"></i>
+                                После регистрации вы получите ID пользователя для бронирования мест.
+                            </small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" form="register-form" class="btn btn-primary">
+                        Зарегистрироваться
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно бронирования -->
+    <div class="modal fade" id="bookModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-bookmark-plus me-2"></i>Бронирование места
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="book-form">
+                        <div class="mb-3">
+                            <label for="book-event-id" class="form-label">ID мероприятия *</label>
+                            <input type="text" class="form-control" id="book-event-id" 
+                                   placeholder="Введите ID мероприятия" required>
+                            <div class="form-text">ID можно скопировать из карточки мероприятия</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="book-user-id" class="form-label">Ваш ID пользователя *</label>
+                            <input type="text" class="form-control" id="book-user-id" 
+                                   placeholder="Введите ваш ID пользователя" required>
+                            <div class="form-text">Получите ID после регистрации</div>
+                        </div>
+                        <div class="alert alert-warning">
+                            <small>
+                                <i class="bi bi-clock-history me-1"></i>
+                                Бронь будет автоматически отменена, если не подтвердить её в течение заданного времени.
+                            </small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" form="book-form" class="btn btn-success">
+                        Забронировать
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно подтверждения брони -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">
+                        <i class="bi bi-check-circle me-2"></i>Подтверждение брони
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="confirm-form">
+                        <div class="mb-3">
+                            <label for="confirm-booking-id" class="form-label">ID бронирования *</label>
+                            <input type="text" class="form-control" id="confirm-booking-id" 
+                                   placeholder="Введите ID бронирования" required>
+                            <div class="form-text">ID брони вы получили при создании бронирования</div>
+                        </div>
+                        <div class="alert alert-info">
+                            <small>
+                                <i class="bi bi-info-circle me-1"></i>
+                                Подтверждение брони необходимо для мероприятий с оплатой.
+                            </small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" form="confirm-form" class="btn btn-warning">
+                        Подтвердить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Футер -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="bi bi-calendar-event me-2"></i>EventBooker</h5>
+                    <p class="mb-0">Сервис бронирования мест на мероприятия с автоматической отменой неоплаченных броней.</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="mb-0">
+                        <i class="bi bi-clock-history me-1"></i>
+                        <span id="last-update">Обновлено: --:--:--</span>
+                    </p>
+                    <small class="text-muted">Автоматическое обновление каждые 10 секунд</small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/app.js"></script>
 </body>
 </html>

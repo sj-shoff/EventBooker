@@ -1,4 +1,3 @@
-// internal/router/router.go
 package router
 
 import (
@@ -28,13 +27,16 @@ func SetupRouter(h *Handler) http.Handler {
 			r.Get("/", h.EventHandler.ListEvents)
 			r.Post("/", h.EventHandler.CreateEvent)
 			r.Get("/{id}", h.EventHandler.GetEvent)
+			r.Delete("/{id}", h.EventHandler.DeleteEvent)
 			r.Post("/{id}/book", h.BookingHandler.Book)
 		})
 		r.Route("/bookings", func(r chi.Router) {
 			r.Post("/{id}/confirm", h.BookingHandler.Confirm)
+			r.Delete("/{id}", h.BookingHandler.Cancel)
 		})
 		r.Route("/users", func(r chi.Router) {
 			r.Post("/", h.UserHandler.Register)
+			r.Get("/{id}", h.UserHandler.GetUser)
 		})
 	})
 	workDir, _ := os.Getwd()

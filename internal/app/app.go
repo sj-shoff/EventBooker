@@ -60,7 +60,7 @@ func NewApp(cfg *config.Config, logger *zlog.Zerolog) (*App, error) {
 	userRepo := user_repo.NewUserRepository(db, retries)
 
 	bookingUsecase := booking_uc.NewBookingUsecase(db, bookingRepo, eventRepo, userRepo, compositeNotifier, cfg, logger)
-	eventUsecase := event_uc.NewEventUsecase(eventRepo, bookingRepo)
+	eventUsecase := event_uc.NewEventUsecase(db, eventRepo, bookingRepo, userRepo, compositeNotifier, logger)
 	userUsecase := user_uc.NewUserUsecase(userRepo)
 
 	sch := scheduler.NewScheduler(bookingUsecase, cfg, logger)
