@@ -10,11 +10,11 @@ import (
 )
 
 type EventUsecase struct {
-	repo        EventRepository
-	bookingRepo BookingRepository
+	repo        eventRepository
+	bookingRepo bookingRepository
 }
 
-func NewEventUsecase(repo EventRepository, bookingRepo BookingRepository) *EventUsecase {
+func NewEventUsecase(repo eventRepository, bookingRepo bookingRepository) *EventUsecase {
 	return &EventUsecase{repo: repo, bookingRepo: bookingRepo}
 }
 

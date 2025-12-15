@@ -4,20 +4,19 @@ import (
 	"context"
 
 	"event-booker/internal/config"
-	"event-booker/internal/usecase/booking"
 
 	"github.com/robfig/cron/v3"
 	"github.com/wb-go/wbf/zlog"
 )
 
 type Scheduler struct {
-	bookingUsecase *booking.BookingUsecase
+	bookingUsecase bookingUsecase
 	cfg            *config.Config
 	logger         *zlog.Zerolog
 	cron           *cron.Cron
 }
 
-func NewScheduler(bookingUsecase *booking.BookingUsecase, cfg *config.Config, logger *zlog.Zerolog) *Scheduler {
+func NewScheduler(bookingUsecase bookingUsecase, cfg *config.Config, logger *zlog.Zerolog) *Scheduler {
 	return &Scheduler{
 		bookingUsecase: bookingUsecase,
 		cfg:            cfg,

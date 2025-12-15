@@ -5,11 +5,11 @@ import (
 	"event-booker/internal/domain"
 )
 
-type EventRepository interface {
+type eventRepository interface {
 	Create(ctx context.Context, event *domain.Event) error
 	GetByID(ctx context.Context, id string) (*domain.Event, error)
 }
 
-type BookingRepository interface {
+type bookingRepository interface {
 	GetByEventID(ctx context.Context, eventID string) ([]*domain.Booking, error)
 }

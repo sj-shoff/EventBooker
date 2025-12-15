@@ -35,7 +35,7 @@ type Config struct {
 		Backoff  float64 `env:"RETRIES_BACKOFF" validate:"required"`
 	}
 
-	SchedulerConfig struct {
+	Scheduler struct {
 		CleanupInterval time.Duration `env:"SCHEDULER_CLEANUP_INTERVAL" validate:"required"`
 		BookingTTL      time.Duration `env:"SCHEDULER_BOOKING_TTL" validate:"required"`
 	}

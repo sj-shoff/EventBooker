@@ -7,7 +7,6 @@ import (
 
 	"event-booker/internal/config"
 	"event-booker/internal/domain"
-	"event-booker/internal/notification"
 
 	"github.com/google/uuid"
 )
@@ -15,11 +14,12 @@ import (
 type BookingUsecase struct {
 	repo      bookingRepository
 	eventRepo eventRepository
-	notifier  notification.Notifier
+	userRepo  userRepository
+	notifier  notifier
 	cfg       *config.Config
 }
 
-func NewBookingUsecase(repo bookingRepository, eventRepo eventRepository, notifier notification.Notifier, cfg *config.Config) *BookingUsecase {
+func NewBookingUsecase(repo bookingRepository, eventRepo eventRepository, notifier notifier, cfg *config.Config) *BookingUsecase {
 	return &BookingUsecase{
 		repo:      repo,
 		eventRepo: eventRepo,
@@ -98,7 +98,7 @@ func (uc *BookingUsecase) CancelBooking(ctx context.Context, bookingID string) e
 
 	user, err := uc.userRepo.GetByID(ctx, booking.UserID)
 	if err == nil {
-		uc.notifier.NotifyCancellation(user.Email, booking)
+		uc.notifier.NotifyCancellation(user, booking)
 	}
 
 	return nil

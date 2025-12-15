@@ -15,10 +15,10 @@ func NewNotifier(cfg *config.Config) *Notifier {
 	return &Notifier{cfg: cfg}
 }
 
-func (n *Notifier) NotifyCancellation(email string, booking *domain.Booking) error {
+func (n *Notifier) NotifyCancellation(user *domain.User, booking *domain.Booking) error {
 	auth := smtp.PlainAuth("", n.cfg.EmailConfig.SMTPUser, n.cfg.EmailConfig.SMTPPassword, n.cfg.EmailConfig.SMTPHost)
-	to := []string{email}
-	msg := []byte("To: " + email + "\r\n" +
+	to := []string{user.Email}
+	msg := []byte("To: " + user.Email + "\r\n" +
 		"Subject: Booking Cancelled\r\n" +
 		"\r\n" +
 		"Your booking for event " + booking.EventID + " has been cancelled due to expiration.\r\n")

@@ -19,3 +19,11 @@ type eventRepository interface {
 	DecrementAvailableSeats(ctx context.Context, id string) error
 	IncrementAvailableSeats(ctx context.Context, id string) error
 }
+
+type userRepository interface {
+	GetByID(ctx context.Context, id string) (*domain.User, error)
+}
+
+type notifier interface {
+	NotifyCancellation(user *domain.User, booking *domain.Booking) error
+}
