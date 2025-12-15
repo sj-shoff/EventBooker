@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  app:
+    build: .
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    volumes:
+      - ./static:/app/static
+      - ./templates:/app/templates
+    restart: unless-stopped
+    networks:
+      - app-network
+    command: ["./event-booker"]
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
