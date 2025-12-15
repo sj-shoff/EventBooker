@@ -1,0 +1,84 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Panel</title>
+</head>
+<body>
+    <h1>Register User</h1>
+    <form id="register-form">
+        Email: <input type="email" id="email"><br>
+        Telegram Chat ID: <input type="text" id="telegram"><br>
+        <button type="submit">Register</button>
+    </form>
+    <h1>Events</h1>
+    <div id="events-list"></div>
+    <h1>Book Place</h1>
+    <form id="book-form">
+        Event ID: <input type="text" id="book-event-id"><br>
+        User ID: <input type="text" id="book-user-id"><br>
+        <button type="submit">Book</button>
+    </form>
+    <h1>Confirm Booking</h1>
+    <form id="confirm-form">
+        Booking ID: <input type="text" id="confirm-booking-id"><br>
+        <button type="submit">Confirm</button>
+    </form>
+    <script>
+        function updateEvents() {
+            fetch('/api/events').then(res => res.json()).then(data => {
+                const list = document.getElementById('events-list');
+                list.innerHTML = '';
+                data.forEach(e => {
+                    const p = document.createElement('p');
+                    p.innerText = `ID: ${e.ID}, Name: ${e.Name}, Available: ${e.Available}, Date: ${e.Date}`;
+                    list.appendChild(p);
+                });
+            });
+        }
+        updateEvents();
+        setInterval(updateEvents, 10000); // Poll every 10s
+
+        document.getElementById('register-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const telegram = document.getElementById('telegram').value;
+            fetch('/api/users', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email, telegram, role: 'user'})
+            }).then(res => res.json()).then(data => {
+                alert('User registered: ' + data.ID);
+            });
+        });
+
+        document.getElementById('book-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const eventId = document.getElementById('book-event-id').value;
+            const userId = document.getElementById('book-user-id').value;
+            fetch(`/api/events/${eventId}/book`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: userId})
+            }).then(res => res.json()).then(data => {
+                alert('Booked: ' + data.ID);
+                updateEvents();
+            }).catch(err => alert(err));
+        });
+
+        document.getElementById('confirm-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const bookingId = document.getElementById('confirm-booking-id').value;
+            fetch(`/api/bookings/${bookingId}/confirm`, {method: 'POST'}).then(res => {
+                if (res.ok) {
+                    alert('Confirmed');
+                    updateEvents();
+                } else {
+                    alert('Error');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

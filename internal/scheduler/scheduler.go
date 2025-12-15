@@ -50,3 +50,7 @@ func (s *Scheduler) cleanupExpiredBookings(ctx context.Context) {
 		}
 	}
 }
+
+func (s *Scheduler) Stop() {
+	s.cron.Stop()
+}

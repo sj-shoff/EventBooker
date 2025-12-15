@@ -1,3 +1,4 @@
+// internal/router/router.go
 package router
 
 import (
@@ -24,9 +25,12 @@ func SetupRouter(h *Handler) http.Handler {
 	r.Use(middleware.LoggingMiddleware)
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/events", func(r chi.Router) {
+			r.Get("/", h.EventHandler.ListEvents)
 			r.Post("/", h.EventHandler.CreateEvent)
 			r.Get("/{id}", h.EventHandler.GetEvent)
 			r.Post("/{id}/book", h.BookingHandler.Book)
+		})
+		r.Route("/bookings", func(r chi.Router) {
 			r.Post("/{id}/confirm", h.BookingHandler.Confirm)
 		})
 		r.Route("/users", func(r chi.Router) {

@@ -1,0 +1,53 @@
+<!-- templates/admin.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel</title>
+</head>
+<body>
+    <h1>Create Event</h1>
+    <form id="create-event-form">
+        Name: <input type="text" id="name"><br>
+        Date: <input type="datetime-local" id="date"><br>
+        Total Seats: <input type="number" id="total-seats"><br>
+        Booking TTL (e.g., 30m): <input type="text" id="booking-ttl"><br>
+        Requires Payment: <input type="checkbox" id="requires-payment"><br>
+        <button type="submit">Create</button>
+    </form>
+    <h1>Events</h1>
+    <div id="events-list"></div>
+    <script>
+        function updateEvents() {
+            fetch('/api/events').then(res => res.json()).then(data => {
+                const list = document.getElementById('events-list');
+                list.innerHTML = '';
+                data.forEach(e => {
+                    const p = document.createElement('p');
+                    p.innerText = `ID: ${e.ID}, Name: ${e.Name}, Available: ${e.Available}, Date: ${e.Date}`;
+                    list.appendChild(p);
+                });
+            });
+        }
+        updateEvents();
+        setInterval(updateEvents, 10000); // Poll every 10s
+
+        document.getElementById('create-event-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const date = new Date(document.getElementById('date').value);
+            const totalSeats = parseInt(document.getElementById('total-seats').value);
+            const bookingTTL = document.getElementById('booking-ttl').value;
+            const requiresPayment = document.getElementById('requires-payment').checked;
+            fetch('/api/events', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, date, total_seats: totalSeats, booking_ttl: bookingTTL, requires_payment: requiresPayment})
+            }).then(res => res.json()).then(data => {
+                alert('Event created: ' + data.ID);
+                updateEvents();
+            });
+        });
+    </script>
+</body>
+</html>

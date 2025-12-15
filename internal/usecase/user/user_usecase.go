@@ -2,8 +2,11 @@ package user_uc
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"event-booker/internal/domain"
+	"event-booker/internal/repository"
 
 	"github.com/google/uuid"
 )
@@ -18,14 +21,25 @@ func NewUserUsecase(repo userRepository) *UserUsecase {
 
 func (uc *UserUsecase) RegisterUser(ctx context.Context, email, telegram string, role domain.UserRole) (*domain.User, error) {
 	user := &domain.User{
-		ID:       uuid.NewString(),
-		Email:    email,
-		Telegram: telegram,
-		Role:     role,
+		ID:        uuid.NewString(),
+		Email:     email,
+		Telegram:  telegram,
+		Role:      role,
+		CreatedAt: time.Now(),
 	}
-	return user, uc.repo.Create(ctx, user)
+	if err := uc.repo.Create(ctx, user); err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 func (uc *UserUsecase) GetUser(ctx context.Context, id string) (*domain.User, error) {
-	return uc.repo.GetByID(ctx, id)
+	user, err := uc.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+	return user, nil
 }

@@ -1,12 +1,12 @@
-package postgres
+package booking_postgres
 
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	"event-booker/internal/domain"
+	"event-booker/internal/repository"
 
 	"github.com/wb-go/wbf/dbpg"
 	"github.com/wb-go/wbf/retry"
@@ -21,21 +21,24 @@ func NewBookingRepository(db *dbpg.DB, retries retry.Strategy) *BookingRepositor
 	return &BookingRepository{db: db, retries: retries}
 }
 
-func (r *BookingRepository) Create(ctx context.Context, booking *domain.Booking) error {
+func (r *BookingRepository) Create(ctx context.Context, tx *sql.Tx, booking *domain.Booking) error {
 	query := `
-	INSERT INTO bookings (id, event_id, user_id, status, created_at, expires_at, confirmed_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7)
-	`
-	_, err := r.db.ExecWithRetry(ctx, r.retries, query,
-		booking.ID, booking.EventID, booking.UserID, booking.Status, booking.CreatedAt, booking.ExpiresAt, booking.ConfirmedAt)
+INSERT INTO bookings (id, event_id, user_id, status, created_at, expires_at, confirmed_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+`
+	if tx != nil {
+		_, err := tx.ExecContext(ctx, query, booking.ID, booking.EventID, booking.UserID, booking.Status, booking.CreatedAt, booking.ExpiresAt, booking.ConfirmedAt)
+		return err
+	}
+	_, err := r.db.ExecWithRetry(ctx, r.retries, query, booking.ID, booking.EventID, booking.UserID, booking.Status, booking.CreatedAt, booking.ExpiresAt, booking.ConfirmedAt)
 	return err
 }
 
 func (r *BookingRepository) GetByID(ctx context.Context, id string) (*domain.Booking, error) {
 	query := `
-	SELECT id, event_id, user_id, status, created_at, expires_at, confirmed_at
-	FROM bookings WHERE id = $1
-	`
+SELECT id, event_id, user_id, status, created_at, expires_at, confirmed_at
+FROM bookings WHERE id = $1
+`
 	row, err := r.db.QueryRowWithRetry(ctx, r.retries, query, id)
 	if err != nil {
 		return nil, err
@@ -43,30 +46,41 @@ func (r *BookingRepository) GetByID(ctx context.Context, id string) (*domain.Boo
 	var booking domain.Booking
 	err = row.Scan(&booking.ID, &booking.EventID, &booking.UserID, &booking.Status, &booking.CreatedAt, &booking.ExpiresAt, &booking.ConfirmedAt)
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("booking not found")
+		return nil, repository.ErrNotFound
 	}
-	return &booking, err
+	if err != nil {
+		return nil, err
+	}
+	return &booking, nil
 }
 
-func (r *BookingRepository) Update(ctx context.Context, booking *domain.Booking) error {
+func (r *BookingRepository) Update(ctx context.Context, tx *sql.Tx, booking *domain.Booking) error {
 	query := `
-	UPDATE bookings SET status = $1, confirmed_at = $2 WHERE id = $3
-	`
+UPDATE bookings SET status = $1, confirmed_at = $2 WHERE id = $3
+`
+	if tx != nil {
+		_, err := tx.ExecContext(ctx, query, booking.Status, booking.ConfirmedAt, booking.ID)
+		return err
+	}
 	_, err := r.db.ExecWithRetry(ctx, r.retries, query, booking.Status, booking.ConfirmedAt, booking.ID)
 	return err
 }
 
-func (r *BookingRepository) Delete(ctx context.Context, id string) error {
+func (r *BookingRepository) Delete(ctx context.Context, tx *sql.Tx, id string) error {
 	query := `DELETE FROM bookings WHERE id = $1`
+	if tx != nil {
+		_, err := tx.ExecContext(ctx, query, id)
+		return err
+	}
 	_, err := r.db.ExecWithRetry(ctx, r.retries, query, id)
 	return err
 }
 
 func (r *BookingRepository) GetExpired(ctx context.Context, now time.Time) ([]*domain.Booking, error) {
 	query := `
-	SELECT id, event_id, user_id, status, created_at, expires_at, confirmed_at
-	FROM bookings WHERE status = 'pending' AND expires_at < $1
-	`
+SELECT id, event_id, user_id, status, created_at, expires_at, confirmed_at
+FROM bookings WHERE status = 'pending' AND expires_at < $1
+`
 	rows, err := r.db.QueryWithRetry(ctx, r.retries, query, now)
 	if err != nil {
 		return nil, err
@@ -81,14 +95,17 @@ func (r *BookingRepository) GetExpired(ctx context.Context, now time.Time) ([]*d
 		}
 		bookings = append(bookings, &b)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return bookings, nil
 }
 
 func (r *BookingRepository) GetByEventID(ctx context.Context, eventID string) ([]*domain.Booking, error) {
 	query := `
-	SELECT id, event_id, user_id, status, created_at, expires_at, confirmed_at
-	FROM bookings WHERE event_id = $1
-	`
+SELECT id, event_id, user_id, status, created_at, expires_at, confirmed_at
+FROM bookings WHERE event_id = $1
+`
 	rows, err := r.db.QueryWithRetry(ctx, r.retries, query, eventID)
 	if err != nil {
 		return nil, err
@@ -102,6 +119,9 @@ func (r *BookingRepository) GetByEventID(ctx context.Context, eventID string) ([
 			return nil, err
 		}
 		bookings = append(bookings, &b)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return bookings, nil
 }

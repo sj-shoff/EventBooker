@@ -2,12 +2,14 @@ package event_uc
 
 import (
 	"context"
+
 	"event-booker/internal/domain"
 )
 
 type eventRepository interface {
 	Create(ctx context.Context, event *domain.Event) error
 	GetByID(ctx context.Context, id string) (*domain.Event, error)
+	GetAll(ctx context.Context) ([]*domain.Event, error)
 }
 
 type bookingRepository interface {

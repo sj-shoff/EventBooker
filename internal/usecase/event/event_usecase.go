@@ -2,9 +2,11 @@ package event_uc
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"event-booker/internal/domain"
+	"event-booker/internal/repository"
 
 	"github.com/google/uuid"
 )
@@ -19,6 +21,7 @@ func NewEventUsecase(repo eventRepository, bookingRepo bookingRepository) *Event
 }
 
 func (uc *EventUsecase) CreateEvent(ctx context.Context, name string, date time.Time, totalSeats int, ttl time.Duration, requiresPayment bool) (*domain.Event, error) {
+	now := time.Now()
 	event := &domain.Event{
 		ID:              uuid.NewString(),
 		Name:            name,
@@ -27,19 +30,26 @@ func (uc *EventUsecase) CreateEvent(ctx context.Context, name string, date time.
 		Available:       totalSeats,
 		BookingTTL:      ttl,
 		RequiresPayment: requiresPayment,
+		CreatedAt:       now,
+		UpdatedAt:       now,
 	}
-	return event, uc.repo.Create(ctx, event)
+	if err := uc.repo.Create(ctx, event); err != nil {
+		return nil, err
+	}
+	return event, nil
 }
 
 func (uc *EventUsecase) GetEvent(ctx context.Context, id string) (*domain.Event, error) {
 	event, err := uc.repo.GetByID(ctx, id)
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, ErrEventNotFound
+		}
 		return nil, err
 	}
-	bookings, err := uc.bookingRepo.GetByEventID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	event.Available = event.TotalSeats - len(bookings) // approximate, assuming no concurrent
 	return event, nil
+}
+
+func (uc *EventUsecase) ListEvents(ctx context.Context) ([]*domain.Event, error) {
+	return uc.repo.GetAll(ctx)
 }
