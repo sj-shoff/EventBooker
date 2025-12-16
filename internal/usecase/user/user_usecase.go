@@ -20,6 +20,9 @@ func NewUserUsecase(repo userRepository) *UserUsecase {
 }
 
 func (uc *UserUsecase) RegisterUser(ctx context.Context, email, telegram string, role domain.UserRole) (*domain.User, error) {
+	if role != domain.RoleUser && role != domain.RoleAdmin {
+		return nil, errors.New("invalid role")
+	}
 	user := &domain.User{
 		ID:        uuid.NewString(),
 		Email:     email,

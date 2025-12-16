@@ -11,7 +11,6 @@ type eventRepository interface {
 	GetByID(ctx context.Context, id string) (*domain.Event, error)
 	GetForUpdate(ctx context.Context, tx *sql.Tx, id string) (*domain.Event, error)
 	GetAll(ctx context.Context) ([]*domain.Event, error)
-	GetActiveEvents(ctx context.Context) ([]*domain.Event, error)
 	Update(ctx context.Context, tx *sql.Tx, event *domain.Event) error
 	Delete(ctx context.Context, id string) error
 	DecrementAvailableSeats(ctx context.Context, tx *sql.Tx, id string) error

@@ -26,10 +26,8 @@
             </div>
         </div>
     </nav>
-
     <!-- Уведомления -->
     <div id="alert-container" class="alert-toast"></div>
-
     <!-- Основной контент -->
     <div class="container py-4">
         <div class="row mb-4">
@@ -51,10 +49,8 @@
                 </div>
             </div>
         </div>
-
         <!-- Информация о пользователе -->
         <div id="user-info" class="mb-4"></div>
-
         <!-- Статистика -->
         <div class="row mb-4">
             <div class="col-md-3">
@@ -97,12 +93,10 @@
                 </div>
             </div>
         </div>
-
         <!-- Список мероприятий -->
         <div class="row" id="events-container">
             <!-- События будут загружены динамически -->
         </div>
-
         <!-- Сообщение при отсутствии мероприятий -->
         <div id="no-events" class="text-center py-5 d-none">
             <div class="mb-4">
@@ -112,7 +106,6 @@
             <p class="text-muted">Проверьте позже или обратитесь к администратору.</p>
         </div>
     </div>
-
     <!-- Модальное окно регистрации -->
     <div class="modal fade" id="registerModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -127,13 +120,13 @@
                     <form id="register-form">
                         <div class="mb-3">
                             <label for="email" class="form-label">Email *</label>
-                            <input type="email" class="form-control" id="email" 
+                            <input type="email" class="form-control" id="email"
                                    placeholder="example@mail.com" required>
                             <div class="form-text">Для уведомлений об отмене брони</div>
                         </div>
                         <div class="mb-3">
                             <label for="telegram" class="form-label">Telegram Chat ID</label>
-                            <input type="text" class="form-control" id="telegram" 
+                            <input type="text" class="form-control" id="telegram"
                                    placeholder="@username или chat_id">
                             <div class="form-text">Необязательно. Для уведомлений в Telegram</div>
                         </div>
@@ -141,12 +134,12 @@
                             <label class="form-label">Роль</label>
                             <div>
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="role" 
+                                    <input class="form-check-input" type="radio" name="role"
                                            id="role-user" value="user" checked>
                                     <label class="form-check-label" for="role-user">Пользователь</label>
                                 </div>
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="role" 
+                                    <input class="form-check-input" type="radio" name="role"
                                            id="role-admin" value="admin">
                                     <label class="form-check-label" for="role-admin">Администратор</label>
                                 </div>
@@ -169,7 +162,6 @@
             </div>
         </div>
     </div>
-
     <!-- Модальное окно бронирования -->
     <div class="modal fade" id="bookModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -184,15 +176,15 @@
                     <form id="book-form">
                         <div class="mb-3">
                             <label for="book-event-id" class="form-label">ID мероприятия *</label>
-                            <input type="text" class="form-control" id="book-event-id" 
+                            <input type="text" class="form-control" id="book-event-id"
                                    placeholder="Введите ID мероприятия" required>
                             <div class="form-text">ID можно скопировать из карточки мероприятия</div>
                         </div>
                         <div class="mb-3">
                             <label for="book-user-id" class="form-label">Ваш ID пользователя *</label>
-                            <input type="text" class="form-control" id="book-user-id" 
+                            <input type="text" class="form-control" id="book-user-id"
                                    placeholder="Введите ваш ID пользователя" required>
-                            <div class="form-text">Получите ID после регистрации</div>
+                            <div class="form-text">Получен после регистрации</div>
                         </div>
                         <div class="alert alert-warning">
                             <small>
@@ -211,7 +203,6 @@
             </div>
         </div>
     </div>
-
     <!-- Модальное окно подтверждения брони -->
     <div class="modal fade" id="confirmModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -226,7 +217,7 @@
                     <form id="confirm-form">
                         <div class="mb-3">
                             <label for="confirm-booking-id" class="form-label">ID бронирования *</label>
-                            <input type="text" class="form-control" id="confirm-booking-id" 
+                            <input type="text" class="form-control" id="confirm-booking-id"
                                    placeholder="Введите ID бронирования" required>
                             <div class="form-text">ID брони вы получили при создании бронирования</div>
                         </div>
@@ -247,7 +238,6 @@
             </div>
         </div>
     </div>
-
     <!-- Футер -->
     <footer class="bg-dark text-white py-4 mt-5">
         <div class="container">
@@ -266,7 +256,6 @@
             </div>
         </div>
     </footer>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/app.js"></script>
 </body>

@@ -125,3 +125,33 @@ FROM bookings WHERE event_id = $1
 	}
 	return bookings, nil
 }
+
+func (r *BookingRepository) GetAll(ctx context.Context) ([]*domain.Booking, error) {
+	query := `
+SELECT b.id, b.event_id, b.user_id, b.status, b.created_at, b.expires_at, b.confirmed_at, e.name as event_name, u.email as user_email
+FROM bookings b
+JOIN events e ON b.event_id = e.id
+JOIN users u ON b.user_id = u.id
+ORDER BY b.created_at DESC
+`
+	rows, err := r.db.QueryWithRetry(ctx, r.retries, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var bookings []*domain.Booking
+	for rows.Next() {
+		var b domain.Booking
+		var eventName string
+		var userEmail string
+		err := rows.Scan(&b.ID, &b.EventID, &b.UserID, &b.Status, &b.CreatedAt, &b.ExpiresAt, &b.ConfirmedAt, &eventName, &userEmail)
+		if err != nil {
+			return nil, err
+		}
+		bookings = append(bookings, &b)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return bookings, nil
+}

@@ -2,8 +2,8 @@ package scheduler
 
 import (
 	"context"
-
 	"event-booker/internal/config"
+	"strings"
 
 	"github.com/robfig/cron/v3"
 	"github.com/wb-go/wbf/zlog"
@@ -26,7 +26,8 @@ func NewScheduler(bookingUsecase bookingUsecase, cfg *config.Config, logger *zlo
 }
 
 func (s *Scheduler) Start(ctx context.Context) {
-	_, err := s.cron.AddFunc("@every "+s.cfg.Scheduler.CleanupInterval.String(), func() {
+	intervalStr := strings.TrimSuffix(s.cfg.Scheduler.CleanupInterval.String(), "0s")
+	_, err := s.cron.AddFunc("@every "+intervalStr, func() {
 		s.cleanupExpiredBookings(ctx)
 	})
 	if err != nil {

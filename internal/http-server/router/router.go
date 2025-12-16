@@ -1,6 +1,8 @@
 package router
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -29,8 +31,23 @@ func SetupRouter(h *Handler) http.Handler {
 			r.Get("/{id}", h.EventHandler.GetEvent)
 			r.Delete("/{id}", h.EventHandler.DeleteEvent)
 			r.Post("/{id}/book", h.BookingHandler.Book)
+			r.Post("/{id}/confirm", func(w http.ResponseWriter, r *http.Request) {
+				var req struct {
+					BookingID string `json:"booking_id"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					http.Error(w, "Invalid request body", http.StatusBadRequest)
+					return
+				}
+				if req.BookingID == "" {
+					http.Error(w, "booking_id required", http.StatusBadRequest)
+					return
+				}
+				h.BookingHandler.Confirm(w, r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, map[string]string{"id": req.BookingID})))
+			})
 		})
 		r.Route("/bookings", func(r chi.Router) {
+			r.Get("/", h.BookingHandler.ListBookings)
 			r.Post("/{id}/confirm", h.BookingHandler.Confirm)
 			r.Delete("/{id}", h.BookingHandler.Cancel)
 		})

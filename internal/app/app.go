@@ -38,6 +38,7 @@ type App struct {
 }
 
 func NewApp(cfg *config.Config, logger *zlog.Zerolog) (*App, error) {
+
 	retries := cfg.DefaultRetryStrategy()
 
 	dbOpts := &dbpg.Options{
@@ -70,9 +71,7 @@ func NewApp(cfg *config.Config, logger *zlog.Zerolog) (*App, error) {
 		BookingHandler: booking.NewBookingHandler(bookingUsecase, logger),
 		UserHandler:    user.NewUserHandler(userUsecase, logger),
 	}
-
 	mux := router.SetupRouter(h)
-
 	server := &http.Server{
 		Addr:         ":" + cfg.Server.Addr,
 		Handler:      mux,
@@ -80,7 +79,6 @@ func NewApp(cfg *config.Config, logger *zlog.Zerolog) (*App, error) {
 		WriteTimeout: cfg.Server.WriteTimeout,
 		IdleTimeout:  cfg.Server.IdleTimeout,
 	}
-
 	return &App{
 		cfg:       cfg,
 		server:    server,
@@ -91,52 +89,45 @@ func NewApp(cfg *config.Config, logger *zlog.Zerolog) (*App, error) {
 }
 
 func (a *App) Run() error {
-	a.logger.Info().Str("addr", a.cfg.Server.Addr).Msg("Starting server")
-
+	a.logger.Info().Str("addr", a.server.Addr).Msg("Starting server")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	go a.handleSignals(cancel)
-
+	a.scheduler.Start(ctx)
 	serverErr := make(chan error, 1)
 	go func() {
 		if err := a.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErr <- err
 		}
 	}()
+	a.handleSignals(cancel, serverErr)
+	return nil
+}
+
+func (a *App) handleSignals(cancel context.CancelFunc, serverErr chan error) {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	select {
 	case err := <-serverErr:
 		a.logger.Error().Err(err).Msg("Server error")
-		return err
-	case <-ctx.Done():
-		a.logger.Info().Msg("Shutting down server")
-
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), a.cfg.Server.ShutdownTimeout)
-		defer shutdownCancel()
-
-		if err := a.server.Shutdown(shutdownCtx); err != nil {
-			a.logger.Error().Err(err).Msg("Server shutdown failed")
-		}
-
-		if a.db != nil && a.db.Master != nil {
-			a.db.Master.Close()
-		}
-
-		if a.scheduler != nil {
-			a.scheduler.Stop()
-		}
-
-		a.logger.Info().Msg("Server stopped gracefully")
-		return nil
+		cancel()
+	case sig := <-sigChan:
+		a.logger.Info().Str("signal", sig.String()).Msg("Received signal")
+		cancel()
 	}
-}
 
-func (a *App) handleSignals(cancel context.CancelFunc) {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), a.cfg.Server.ShutdownTimeout)
+	defer shutdownCancel()
 
-	sig := <-sigChan
-	a.logger.Info().Str("signal", sig.String()).Msg("Received signal")
-	cancel()
+	if err := a.server.Shutdown(shutdownCtx); err != nil {
+		a.logger.Error().Err(err).Msg("Server shutdown failed")
+	}
+	if a.db != nil && a.db.Master != nil {
+		a.db.Master.Close()
+	}
+	if a.scheduler != nil {
+		a.scheduler.Stop()
+	}
+
+	a.logger.Info().Msg("Server stopped gracefully")
 }

@@ -15,6 +15,7 @@ type bookingRepository interface {
 	Delete(ctx context.Context, tx *sql.Tx, id string) error
 	GetExpired(ctx context.Context, now time.Time) ([]*domain.Booking, error)
 	GetByEventID(ctx context.Context, eventID string) ([]*domain.Booking, error)
+	GetAll(ctx context.Context) ([]*domain.Booking, error)
 }
 
 type eventRepository interface {

@@ -43,7 +43,6 @@ func (uc *BookingUsecase) BookPlace(ctx context.Context, eventID, userID string)
 		return nil, err
 	}
 	defer tx.Rollback()
-
 	event, err := uc.eventRepo.GetForUpdate(ctx, tx, eventID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -73,6 +72,7 @@ func (uc *BookingUsecase) BookPlace(ctx context.Context, eventID, userID string)
 	} else {
 		booking.Status = domain.BookingConfirmed
 		booking.ConfirmedAt = &now
+		booking.ExpiresAt = time.Time{} // no expiration
 	}
 	if err := uc.repo.Create(ctx, tx, booking); err != nil {
 		uc.logger.Error().Err(err).Str("booking_id", booking.ID).Msg("failed to create booking")
@@ -96,7 +96,6 @@ func (uc *BookingUsecase) ConfirmBooking(ctx context.Context, bookingID string) 
 		return err
 	}
 	defer tx.Rollback()
-
 	booking, err := uc.repo.GetByID(ctx, bookingID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -108,7 +107,7 @@ func (uc *BookingUsecase) ConfirmBooking(ctx context.Context, bookingID string) 
 	if booking.Status != domain.BookingPending {
 		return ErrBookingNotPending
 	}
-	if time.Now().After(booking.ExpiresAt) {
+	if time.Now().After(booking.ExpiresAt) && !booking.ExpiresAt.IsZero() {
 		return ErrBookingExpired
 	}
 	now := time.Now()
@@ -132,7 +131,6 @@ func (uc *BookingUsecase) CancelBooking(ctx context.Context, bookingID string) e
 		return err
 	}
 	defer tx.Rollback()
-
 	booking, err := uc.repo.GetByID(ctx, bookingID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -175,4 +173,8 @@ func (uc *BookingUsecase) GetExpiredBookings(ctx context.Context) ([]*domain.Boo
 		return nil, err
 	}
 	return expired, nil
+}
+
+func (uc *BookingUsecase) ListBookings(ctx context.Context) ([]*domain.Booking, error) {
+	return uc.repo.GetAll(ctx)
 }

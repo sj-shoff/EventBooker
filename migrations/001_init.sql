@@ -13,7 +13,6 @@ CREATE TABLE events (
     updated_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT events_status_check CHECK (status IN ('active', 'cancelled', 'completed'))
 );
-
 CREATE INDEX idx_events_status ON events(status);
 CREATE INDEX idx_events_date ON events(date);
 
@@ -25,7 +24,6 @@ CREATE TABLE users (
     created_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT users_role_check CHECK (role IN ('user', 'admin'))
 );
-
 CREATE INDEX idx_users_email ON users(email);
 
 CREATE TABLE bookings (
@@ -39,13 +37,11 @@ CREATE TABLE bookings (
     CONSTRAINT bookings_status_check CHECK (status IN ('pending', 'confirmed', 'cancelled')),
     CONSTRAINT bookings_event_user_unique UNIQUE (event_id, user_id)
 );
-
 CREATE INDEX idx_bookings_event_id ON bookings(event_id);
 CREATE INDEX idx_bookings_user_id ON bookings(user_id);
 CREATE INDEX idx_bookings_status ON bookings(status);
 CREATE INDEX idx_bookings_expires_at ON bookings(expires_at) WHERE status = 'pending';
 -- +goose StatementEnd
-
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE IF EXISTS bookings;
