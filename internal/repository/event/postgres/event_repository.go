@@ -3,6 +3,9 @@ package event_postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"event-booker/internal/domain"
@@ -42,7 +45,7 @@ FROM events WHERE id = $1
 		return nil, err
 	}
 	var event domain.Event
-	var bookingTTL time.Duration
+	var ttlStr string
 	var statusStr string
 	err = row.Scan(
 		&event.ID,
@@ -50,7 +53,7 @@ FROM events WHERE id = $1
 		&event.Date,
 		&event.TotalSeats,
 		&event.Available,
-		&bookingTTL,
+		&ttlStr,
 		&event.RequiresPayment,
 		&statusStr,
 		&event.CreatedAt,
@@ -62,7 +65,15 @@ FROM events WHERE id = $1
 	if err != nil {
 		return nil, err
 	}
-	event.BookingTTL = bookingTTL
+	if strings.Contains(ttlStr, ".") {
+		ttlStr = ttlStr[:strings.Index(ttlStr, ".")]
+	}
+	var h, m, s int
+	n, parseErr := fmt.Sscanf(ttlStr, "%d:%d:%d", &h, &m, &s)
+	if parseErr != nil || n != 3 {
+		return nil, errors.New("failed to parse booking_ttl: " + ttlStr)
+	}
+	event.BookingTTL = time.Duration(h)*time.Hour + time.Duration(m)*time.Minute + time.Duration(s)*time.Second
 	event.Status = domain.EventStatus(statusStr)
 	return &event, nil
 }
@@ -83,7 +94,7 @@ FROM events WHERE id = $1 FOR UPDATE
 		row = rowResult
 	}
 	var event domain.Event
-	var bookingTTL time.Duration
+	var ttlStr string
 	var statusStr string
 	err := row.Scan(
 		&event.ID,
@@ -91,7 +102,7 @@ FROM events WHERE id = $1 FOR UPDATE
 		&event.Date,
 		&event.TotalSeats,
 		&event.Available,
-		&bookingTTL,
+		&ttlStr,
 		&event.RequiresPayment,
 		&statusStr,
 		&event.CreatedAt,
@@ -103,7 +114,15 @@ FROM events WHERE id = $1 FOR UPDATE
 	if err != nil {
 		return nil, err
 	}
-	event.BookingTTL = bookingTTL
+	if strings.Contains(ttlStr, ".") {
+		ttlStr = ttlStr[:strings.Index(ttlStr, ".")]
+	}
+	var h, m, s int
+	n, parseErr := fmt.Sscanf(ttlStr, "%d:%d:%d", &h, &m, &s)
+	if parseErr != nil || n != 3 {
+		return nil, errors.New("failed to parse booking_ttl: " + ttlStr)
+	}
+	event.BookingTTL = time.Duration(h)*time.Hour + time.Duration(m)*time.Minute + time.Duration(s)*time.Second
 	event.Status = domain.EventStatus(statusStr)
 	return &event, nil
 }
@@ -122,7 +141,7 @@ ORDER BY date ASC, created_at DESC
 	var events []*domain.Event
 	for rows.Next() {
 		var event domain.Event
-		var bookingTTL time.Duration
+		var ttlStr string
 		var statusStr string
 		err := rows.Scan(
 			&event.ID,
@@ -130,7 +149,7 @@ ORDER BY date ASC, created_at DESC
 			&event.Date,
 			&event.TotalSeats,
 			&event.Available,
-			&bookingTTL,
+			&ttlStr,
 			&event.RequiresPayment,
 			&statusStr,
 			&event.CreatedAt,
@@ -139,7 +158,15 @@ ORDER BY date ASC, created_at DESC
 		if err != nil {
 			return nil, err
 		}
-		event.BookingTTL = bookingTTL
+		if strings.Contains(ttlStr, ".") {
+			ttlStr = ttlStr[:strings.Index(ttlStr, ".")]
+		}
+		var h, m, s int
+		n, parseErr := fmt.Sscanf(ttlStr, "%d:%d:%d", &h, &m, &s)
+		if parseErr != nil || n != 3 {
+			return nil, errors.New("failed to parse booking_ttl: " + ttlStr)
+		}
+		event.BookingTTL = time.Duration(h)*time.Hour + time.Duration(m)*time.Minute + time.Duration(s)*time.Second
 		event.Status = domain.EventStatus(statusStr)
 		events = append(events, &event)
 	}
